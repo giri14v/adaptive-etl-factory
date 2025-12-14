@@ -1,4 +1,6 @@
 # Adaptive ETL Factory 🚀
+👉 **Live App:** https://hackathon-theta-khaki.vercel.app/
+👉 **YouTube Demo:** https://youtu.be/LNFg__9e3p8
 
 An **end-to-end, production-style ETL orchestration system** that automatically plans, generates, executes, evaluates, and exposes data transformation pipelines — designed with **AI-readiness** at its core.
 
@@ -450,3 +452,4 @@ With additional time and infrastructure, the backend can be deployed using:
 The current setup intentionally prioritizes **clarity, correctness, and hackathon feasibility** over premature cloud complexity.
 
 ---
+

@@ -1,0 +1,25 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+venv/
+.env/
+
+# Node / UI
+node_modules/
+ui/node_modules/
+ui/dist/
+
+# Runtime outputs
+runs/
+*.log
+
+# Environment variables
+.env
+ui/.env
+
+# OS
+.DS_Store
+Thumbs.db

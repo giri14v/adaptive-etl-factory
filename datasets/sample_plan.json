@@ -1,0 +1,23 @@
+{
+  "dataset_id": "sample-01",
+  "steps": [
+    {
+      "id": "parse_dates",
+      "op": "parse_date",
+      "columns": ["order_date"],
+      "params": { "formats": ["%Y-%m-%d", "%d-%m-%Y"] }
+    },
+    {
+      "id": "fill_missing_city",
+      "op": "impute",
+      "columns": ["city"],
+      "params": { "strategy": "mode" }
+    },
+    {
+      "id": "dedupe",
+      "op": "deduplicate",
+      "params": { "keys": ["order_id"] }
+    }
+  ],
+  "confidence": 0.85
+}

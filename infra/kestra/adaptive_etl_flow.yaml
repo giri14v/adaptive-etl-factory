@@ -1,0 +1,95 @@
+id: adaptive_etl_flow
+namespace: giri.etl
+
+description: >
+  Adaptive ETL Pipeline — multi-agent orchestration using Planner, Code Generator,
+  Executor, and Evaluator. Import-safe (Option A).
+
+inputs:
+  - id: plan_path
+    type: STRING
+    description: "Path to raw dataset or plan input"
+    defaults: "datasets/sample_plan.json"
+
+tasks:
+  # --------------------------------------------------
+  # 1. PLANNER — Reads dataset → Produces cleaning plan
+  # --------------------------------------------------
+  - id: call_planner
+    type: io.kestra.plugin.core.http.Request
+    uri: "http://host.docker.internal:8001/plan"
+    method: POST
+    contentType: "application/json"
+    body: "{{ inputs.plan_path }}"
+    saveBody: true
+
+  # --------------------------------------------------
+  # 2. STORE PLAN → Write planner output into /workspace
+  # --------------------------------------------------
+  - id: store_plan
+    type: io.kestra.plugin.core.scripts.Bash
+    script: |
+      mkdir -p /workspace/runs/{{ execution.id }}
+      echo '{{ outputs.call_planner.body }}' > /workspace/runs/{{ execution.id }}/plan.json
+      echo "Plan written to /workspace/runs/{{ execution.id }}/plan.json"
+
+  # --------------------------------------------------
+  # 3. CODEGEN — Pass plan.json to codegen agent
+  # --------------------------------------------------
+  - id: call_codegen
+    type: io.kestra.plugin.core.http.Request
+    uri: "http://host.docker.internal:8002/codegen"
+    method: POST
+    contentType: "application/json"
+    body: "{{ outputs.call_planner.body }}"
+    saveBody: true
+
+  # --------------------------------------------------
+  # 4. STORE GENERATED PYTHON TRANSFORM SCRIPT
+  # --------------------------------------------------
+  - id: save_transform_script
+    type: io.kestra.plugin.core.scripts.Bash
+    script: |
+      mkdir -p /workspace/runs/{{ execution.id }}
+      echo '{{ outputs.call_codegen.body }}' > /workspace/runs/{{ execution.id }}/transform.py
+      chmod +x /workspace/runs/{{ execution.id }}/transform.py
+      echo "Generated transform.py saved."
+
+  # --------------------------------------------------
+  # 5. EXECUTE THE TRANSFORM SCRIPT USING PYTHON
+  # --------------------------------------------------
+  - id: run_transform
+    type: io.kestra.plugin.core.scripts.Bash
+    script: |
+      echo "Running ETL transform..."
+      python3 /workspace/runs/{{ execution.id }}/transform.py \
+        datasets/sample_plan.json \
+        datasets/sample_data.csv \
+        /workspace/runs/{{ execution.id }}/output.csv
+
+      echo "ETL complete. Output saved."
+
+  # --------------------------------------------------
+  # 6. EVALUATOR — Compute metrics based on run output
+  # --------------------------------------------------
+  - id: call_evaluator
+    type: io.kestra.plugin.core.http.Request
+    uri: "http://host.docker.internal:8004/evaluate"
+    method: POST
+    contentType: "application/json"
+    body: "{{ execution.id }}"
+    saveBody: true
+
+  # --------------------------------------------------
+  # 7. FINAL LOGGING
+  # --------------------------------------------------
+  - id: log_summary
+    type: io.kestra.plugin.core.scripts.Bash
+    script: |
+      echo "===== PIPELINE SUMMARY ====="
+      echo "PLAN:"
+      echo '{{ outputs.call_planner.body }}'
+      echo "CODEGEN:"
+      echo '{{ outputs.call_codegen.body }}'
+      echo "EVALUATION:"
+      echo '{{ outputs.call_evaluator.body }}'

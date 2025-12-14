@@ -1,0 +1,7 @@
+id: hello_world
+namespace: giri.etl # you can rename as you like
+
+tasks:
+  - id: log_message
+    type: io.kestra.core.tasks.log.Log
+    message: "Kestra is running successfully! 🚀"

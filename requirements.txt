@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+pandas
+requests
+pydantic
+requests

@@ -1,0 +1,24 @@
+id: adaptive_etl_flow
+namespace: giri.etl
+
+inputs:
+  - id: plan_path
+    type: STRING
+    defaults: "datasets/sample_plan.json"
+
+tasks:
+  - id: hello
+    type: io.kestra.plugin.core.log.Log
+    message: "Hello World! This is giri's work 🚀"
+
+  - id: call_planner
+    type: io.kestra.plugin.core.http.Request
+    method: POST
+    uri: "http://host.docker.internal:8001/plan"
+    contentType: "application/json"
+    headers:
+      Accept: "application/json"
+    body: |
+      {
+        "plan_path": "{{ inputs.plan_path }}"
+      }

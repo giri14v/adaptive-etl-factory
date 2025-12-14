@@ -1,0 +1,13 @@
+id: agent-health
+namespace: giri.etl
+
+tasks:
+  - id: check_agents
+    type: io.kestra.core.tasks.scripts.Bash
+    commands:
+      - echo "Testing agents..."
+      - curl -s http://host.docker.internal:8001/health || echo "Planner DOWN"
+      - curl -s http://host.docker.internal:8002/health || echo "Codegen DOWN"
+      - curl -s http://host.docker.internal:8003/health || echo "Executor DOWN"
+      - curl -s http://host.docker.internal:8004/health || echo "Evaluator DOWN"
+      - curl -s http://host.docker.internal:8005/health || echo "Evolve DOWN"

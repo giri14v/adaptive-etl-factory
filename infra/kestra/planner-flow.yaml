@@ -1,0 +1,64 @@
+# infra/kestra/planner-flow.yaml
+id: adaptive-etl.planner-flow
+namespace: adaptive-etl
+
+inputs:
+  - name: sample
+    type: STRING
+
+tasks:
+  - id: planner
+    type: io.kestra.plugin.ai.agent.AIAgent
+    prompt: |
+      You are the Planner Agent for an autonomous ETL system.
+      Analyze the provided dataset sample and output a JSON cleaning plan (plan.json).
+      Include operations (parse_date, impute, deduplicate, validate) with sensible parameters.
+      Output strictly valid JSON. Also check if a policies/next_plan.json exists and prefer those strategies if present.
+    variables:
+      sample: "{{ inputs.sample }}"
+    outputFiles:
+      - plan.json
+
+  - id: persist-plan
+    type: io.kestra.core.tasks.scripts.bash
+    commands:
+      - mkdir -p runs/{{ execution.id }}
+      - echo "{{ outputs.planner.plan.json }}" > runs/{{ execution.id }}/plan.json
+      - cat runs/{{ execution.id }}/plan.json
+
+  - id: codegen
+    type: io.kestra.core.tasks.scripts.bash
+    commands:
+      - echo "Starting codegen for run {{ execution.id }}"
+      - cline generate --spec runs/{{ execution.id }}/plan.json --lang python --output runs/{{ execution.id }}/transform.py
+      - ls -l runs/{{ execution.id }}
+
+  - id: codereview
+    type: io.kestra.core.tasks.scripts.bash
+    commands:
+      - echo "Triggering CodeRabbit review (placeholder)"
+      - echo "Committing generated code to repo (if enabled)" || true
+      # In production you'd push the generated file and CodeRabbit will run via GitHub hooks
+
+  - id: execute
+    type: io.kestra.core.tasks.scripts.bash
+    commands:
+      - echo "Executing transform in sandbox for run {{ execution.id }}"
+      - cline run runs/{{ execution.id }}/transform.py --sandbox || exit 1
+      - mv runs/{{ execution.id }}/output_sample.csv runs/{{ execution.id }}/output_sample.csv || true
+
+  - id: evaluate
+    type: io.kestra.core.tasks.scripts.bash
+    commands:
+      - echo "Running evaluator for run {{ execution.id }}"
+      - python services/evaluator/run_validate.py --run_id {{ execution.id }}
+
+  - id: evolve
+    type: io.kestra.core.tasks.scripts.bash
+    commands:
+      - echo "Running adaptive evolve step for run {{ execution.id }}"
+      - python services/adapt/evolve.py --run_id {{ execution.id }}
+
+outputs:
+  - name: run_id
+    value: "{{ execution.id }}"

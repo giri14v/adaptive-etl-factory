@@ -1,0 +1,29 @@
+{
+  "dataset_id": "test-01",
+  "steps": [
+    {
+      "id": "parse_dates",
+      "op": "parse_date",
+      "columns": ["order_date"],
+      "params": {
+        "formats": ["%Y-%m-%d", "%d-%m-%Y", "%Y/%m/%d"]
+      }
+    },
+    {
+      "id": "fill_missing_amount",
+      "op": "impute",
+      "columns": ["amount"],
+      "params": {
+        "strategy": "median"
+      }
+    },
+    {
+      "id": "dedupe",
+      "op": "deduplicate",
+      "params": {
+        "keys": ["id"]
+      }
+    }
+  ],
+  "confidence": 0.90
+}
